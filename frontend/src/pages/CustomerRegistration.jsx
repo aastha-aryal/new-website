@@ -442,41 +442,6 @@ const CustomerRegistration = () => {
               
               <div>
                 <label className="text-sm font-medium text-slate-700">
-                  Phone (Nepal only) <span className="text-red-500">*</span>
-                </label>
-                <div className="flex gap-3">
-                  <select 
-                    name="countryCode" 
-                    value={form.countryCode} 
-                    onChange={handleInput} 
-                    className="p-3 rounded-xl border border-gray-200 bg-white text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-                    disabled={submitting || showVerification}
-                  >
-                    <option value="+977">+977 (Nepal)</option>
-                    {countryCodes
-                      .filter(c => c.code !== "+977")
-                      .map(c => (
-                        <option key={c.code} value={c.code} disabled>
-                          {c.code} ({c.label}) - Coming soon
-                        </option>
-                      ))}
-                  </select>
-                  <input 
-                    value={form.phone} 
-                    onChange={handlePhoneChange} 
-                    className="flex-1 p-3 rounded-xl border border-gray-200 bg-white text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500" 
-                    placeholder="9800000000"
-                    disabled={submitting || showVerification}
-                    type="tel"
-                    maxLength="10"
-                  />
-                </div>
-                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
-                <p className="text-xs text-gray-500 mt-1">Currently only Nepali numbers are supported (10 digits)</p>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium text-slate-700">
                   Password <span className="text-red-500">*</span>
                 </label>
                 <input 
@@ -505,6 +470,39 @@ const CustomerRegistration = () => {
                   disabled={submitting || showVerification}
                 />
                 {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
+              </div>
+
+              <div>
+                        <label className="text-sm font-medium text-slate-700">Phone <span className="text-red-500 ml-1">*</span></label>
+                        <div className="flex gap-3 items-center">
+                          <div className="shrink-0">
+                            <select
+                              name="countryCode"
+                              value={form.countryCode}
+                              onChange={handleInput}
+                              className="p-2 rounded-xl border border-gray-200 bg-white text-sm text-slate-800 min-w-[100px]"
+                              disabled={submitting}
+                            >
+                              {countryCodes.map((c) => (
+                                <option key={c.code} value={c.code}>
+                                  {c.code}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <input
+                            value={form.phone}
+                            onChange={handlePhoneChange}
+                            className="flex-1 p-2 rounded-xl border border-gray-200 bg-white text-sm text-slate-800 min-w-[150px]"
+                            placeholder="9800000000"
+                            disabled={submitting}
+                            type="tel"
+                            maxLength="10"
+                          />
+                        </div>
+                        {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+                        <p className="text-xs text-gray-500 mt-1">Currently only Nepali numbers are supported (10 digits)</p>
               </div>
             </div>
 
