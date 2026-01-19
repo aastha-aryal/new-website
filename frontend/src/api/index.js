@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Base URL for backend (make sure your backend is running)
-const API_BASE = import.meta.env.VITE_API_BASE || "https://proconnect-backend-e6en.onrender.com";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://proconnect-backend-zsh0.onrender.com/";
 
 const api = axios.create({
   baseURL: API_BASE,
