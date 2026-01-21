@@ -8,24 +8,25 @@ import {
 } from 'react-icons/fa';
 import { motion } from "framer-motion";
 
-// Import service images from assets
+// Services images
 import plumber from "../assets/services/plumber.jpeg";
 import electrician from "../assets/services/electrician.jpeg";
 import tutor from "../assets/services/tutor.jpeg";
 import painter from "../assets/services/painter.jpeg";
 import cleaner from "../assets/services/cleaner.jpeg";
 import babysitter from "../assets/services/babysitter.jpeg";
-import beautician from "../assets/services/beautician.jpeg";
+import sofacarpet from "../assets/services/sofa-carpet.jpeg";
 import decorator from "../assets/services/event-decorators.jpeg";
 import carpenter from "../assets/services/carpenter.jpeg";
 import photographer from "../assets/services/photographer.jpeg";
 import bandbaja from "../assets/services/bandbaja.jpeg";
 import chef from "../assets/services/chef.jpeg";
 import locksmith from "../assets/services/locksmith.jpeg";
-import tailoring from "../assets/services/tailoring.jpeg";
+import laundry from "../assets/services/laundry.jpeg";
 import movers from "../assets/services/movers.jpeg";
-import catering from "../assets/services/catering.jpeg";
+import waterproofing from "../assets/services/waterproofing.jpeg";
 
+// Services list
 const SERVICES = [
   { id: 1, title: "Plumber", img: plumber },
   { id: 2, title: "Electrician", img: electrician },
@@ -33,16 +34,16 @@ const SERVICES = [
   { id: 4, title: "Painter", img: painter },
   { id: 5, title: "House Help", img: cleaner },
   { id: 6, title: "Babysitters", img: babysitter },
-  { id: 7, title: "Sofa/Carpet Cleaner", img: beautician },
+  { id: 7, title: "Sofa/Carpet Cleaner", img: sofacarpet },
   { id: 8, title: "Event Decorators", img: decorator },
   { id: 9, title: "Carpenter", img: carpenter },
   { id: 10, title: "Photographer", img: photographer },
   { id: 11, title: "Band Baja", img: bandbaja },
   { id: 12, title: "Private Chef", img: chef },
   { id: 13, title: "Locksmith", img: locksmith },
-  { id: 14, title: "Laundry", img: tailoring },
+  { id: 14, title: "Laundry", img: laundry },
   { id: 15, title: "Movers & Packers", img: movers },
-  { id: 16, title: "Waterproofing", img: catering },
+  { id: 16, title: "Waterproofing", img: waterproofing },
 ];
 
 // Selected images for the main collage (using your imported images)
@@ -257,7 +258,7 @@ const Home = () => {
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.7 }}
-                  className="col-start-6 row-start-8 col-span-4 row-span-3 rounded-xl overflow-hidden shadow-sm"
+                  className="col-start-6 row-start-8 col-span-4 row-span-5 rounded-xl overflow-hidden shadow-sm"
                 >
                   <img 
                     src={MAIN_COLLAGE_IMAGES[4]}
@@ -265,7 +266,7 @@ const Home = () => {
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                   />
                 </motion.div>
-                
+
                 {/* Bottom-right - Carpenter */}
                 <motion.div 
                   initial={{ scale: 0.9, opacity: 0 }}
@@ -276,20 +277,6 @@ const Home = () => {
                   <img 
                     src={MAIN_COLLAGE_IMAGES[5]}
                     alt="Carpenter" 
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                  />
-                </motion.div>
-
-                {/* Small accent - Private Chef */}
-                <motion.div 
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.9 }}
-                  className="col-start-6 row-start-11 col-span-4 row-span-2 rounded-lg overflow-hidden shadow"
-                >
-                  <img 
-                    src={MAIN_COLLAGE_IMAGES[11]}
-                    alt="Private Chef" 
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                   />
                 </motion.div>
