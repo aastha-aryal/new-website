@@ -26,19 +26,16 @@ import tutor from "../assets/services/tutor.jpeg";
 import painter from "../assets/services/painter.jpeg";
 import cleaner from "../assets/services/cleaner.jpeg";
 import babysitter from "../assets/services/babysitter.jpeg";
-import beautician from "../assets/services/beautician.jpeg";
+import sofacarpet from "../assets/services/sofa-carpet.jpeg";
 import decorator from "../assets/services/event-decorators.jpeg";
 import carpenter from "../assets/services/carpenter.jpeg";
 import photographer from "../assets/services/photographer.jpeg";
 import bandbaja from "../assets/services/bandbaja.jpeg";
 import chef from "../assets/services/chef.jpeg";
 import locksmith from "../assets/services/locksmith.jpeg";
-import tailoring from "../assets/services/tailoring.jpeg";
+import laundry from "../assets/services/laundry.jpeg";
 import movers from "../assets/services/movers.jpeg";
-import catering from "../assets/services/catering.jpeg";
-
-// API Base URL
-const API_BASE_URL = "http://localhost:5000/api";
+import waterproofing from "../assets/services/waterproofing.jpeg";
 
 // Services list
 const SERVICES = [
@@ -48,17 +45,19 @@ const SERVICES = [
   { id: 4, title: "Painter", img: painter },
   { id: 5, title: "House Help", img: cleaner },
   { id: 6, title: "Babysitters", img: babysitter },
-  { id: 7, title: "Sofa/Carpet Cleaner", img: beautician },
+  { id: 7, title: "Sofa/Carpet Cleaner", img: sofacarpet },
   { id: 8, title: "Event Decorators", img: decorator },
   { id: 9, title: "Carpenter", img: carpenter },
   { id: 10, title: "Photographer", img: photographer },
   { id: 11, title: "Band Baja", img: bandbaja },
   { id: 12, title: "Private Chef", img: chef },
   { id: 13, title: "Locksmith", img: locksmith },
-  { id: 14, title: "Laundry", img: tailoring },
+  { id: 14, title: "Laundry", img: laundry },
   { id: 15, title: "Movers & Packers", img: movers },
-  { id: 16, title: "Waterproofing", img: catering },
+  { id: 16, title: "Waterproofing", img: waterproofing },
 ];
+
+ const API_BASE_URL = "http://localhost:5000/api";
 
 // API Service functions
 const api = axios.create({
@@ -75,59 +74,86 @@ api.interceptors.request.use((config) => {
 });
 
 const customerService = {
-  // Get customer profile
+  // ✅ customer.js routes (MATCHING YOUR BACKEND)
   getProfile: async () => {
     const response = await api.get("/customer/me");
     return response.data;
   },
 
-  // Update customer profile
   updateProfile: async (data) => {
     const response = await api.put("/customer/edit-profile", data);
     return response.data;
   },
 
-  // Get customer requests
+  // ✅ request.js routes (MATCHING YOUR BACKEND)
   getRequests: async (customerId) => {
-    const response = await api.get(`/customer/my-requests/${customerId}`);
+    const response = await api.get(`/request/my-requests/${customerId}`);
     return response.data;
   },
 
-  // Send service request
   sendRequest: async (providerId, serviceType) => {
-    const response = await api.post("/customer/send-request", {
+    const response = await api.post("/request/send-request", {
       providerId,
       serviceType
     });
     return response.data;
   },
 
-  // Update customer location
   updateLocation: async (latitude, longitude) => {
-    const response = await api.post("/customer/update-location", {
-      latitude,
-      longitude
+    const customerId = localStorage.getItem("userId");
+    const response = await api.post("/request/update-location", {
+      customerId,
+      lat: latitude,
+      lng: longitude
     });
     return response.data;
   },
 
-  // Get providers by service
-  getProvidersByService: async (service) => {
-    const response = await api.get(`/dashboard/providers/${service}`);
+  selectService: async (serviceType) => {
+    const response = await api.post("/request/select-service", {
+      serviceType
+    });
     return response.data;
   },
 
-  // Mark request as completed
   completeRequest: async (requestId) => {
-    const response = await api.post(`/customer/complete/${requestId}`);
+    const response = await api.post(`/request/complete/${requestId}`);
     return response.data;
+  },
+
+  getNotifications: async (customerId) => {
+    const response = await api.get(`/request/notifications/${customerId}`);
+    return response.data;
+  },
+
+  // ✅ NEW: Get providers by service (MATCHING YOUR request.js route)
+  getProvidersByService: async (service, customerId) => {
+    const formattedService = service.toLowerCase().replace(/\s+/g, "-");
+    const response = await api.get(`/request/providers/${formattedService}`, {
+      params: { customerId }
+    });
+    return response.data;
+  },
+
+  logout: async () => {
+    try {
+      const response = await api.post("/customer/logout");
+      localStorage.removeItem("token");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("user");
+      return response.data;
+    } catch (err) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("user");
+      return { success: true };
+    }
   }
 };
 
 export default function CustomerDashboard() {
   const navigate = useNavigate();
   const { category } = useParams();
-
   const [activeTab, setActiveTab] = useState("services");
   const [selectedCategory, setSelectedCategory] = useState(category || "");
   const [isEditing, setIsEditing] = useState(false);
@@ -141,7 +167,7 @@ export default function CustomerDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Update selectedCategory when URL changes
+  // Updated selectedCategory when URL changes
   useEffect(() => {
     if (category) {
       const decodedCategory = decodeURIComponent(category).replace(/-/g, " ");
@@ -149,7 +175,86 @@ export default function CustomerDashboard() {
     }
   }, [category]);
 
-  // Fetch Profile
+  // ✅ FIXED: fetchRequests - matches /request/my-requests/:customerId
+  const fetchRequests = async () => {
+    try {
+      if (!profile._id) return;
+      setLoading(true);
+      const data = await customerService.getRequests(profile._id);
+      setRequests(data);
+      const completed = data.filter(r => r.status === "completed");
+      setCompletedServices(completed);
+      setError("");
+    } catch (err) {
+      console.error("Error fetching requests:", err);
+      if (err.response?.status === 401) {
+        localStorage.clear();
+        navigate("/login");
+      }
+      setError("Failed to load requests");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ FIXED: fetchProviders - matches /request/providers/:service
+  const fetchProviders = async (service) => {
+    try {
+      setLoading(true);
+      if (!service) {
+        setProviders([]);
+        return;
+      }
+      
+      // First notify providers (optional but good practice)
+      try {
+        await customerService.selectService(service);
+      } catch (e) {
+        console.log("Service notification optional:", e.message);
+      }
+      
+      // Get providers for this service
+      const data = await customerService.getProvidersByService(service, profile._id);
+      setProviders(data.providers || []);
+      setError("");
+      
+      if (!data.providers || data.providers.length === 0) {
+        setError(`No providers found for ${service}`);
+      }
+    } catch (err) {
+      console.error("Error fetching providers:", err);
+      setProviders([]);
+      if (err.response?.status === 404) {
+        setError(`No providers found for ${service}`);
+      } else {
+        setError(`Error loading providers: ${err.message}`);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ FIXED: handleSendRequest - matches /request/send-request
+  const handleSendRequest = async (providerId, providerName) => {
+    try {
+      if (!selectedCategory || !providerId) {
+        alert("Please select service and provider");
+        return;
+      }
+      setLoading(true);
+      const result = await customerService.sendRequest(providerId, selectedCategory);
+      alert(`Request sent to ${providerName}!`);
+      fetchRequests(); // Refresh requests
+    } catch (err) {
+      console.error("Send request error:", err);
+      const msg = err.response?.data?.msg || "Failed to send request";
+      alert(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ FIXED: fetchProfile
   const fetchProfile = async () => {
     try {
       setLoading(true);
@@ -158,74 +263,44 @@ export default function CustomerDashboard() {
       setPhone(data.phone || "");
       setProfilePic(data.profilePhoto || "https://via.placeholder.com/192x192/4b5563/ffffff?text=AA");
       
-      // Update location with current position if available
-      if (navigator.geolocation) {
+      // Store userId in localStorage for location updates
+      if (data._id) {
+        localStorage.setItem("userId", data._id);
+      }
+      
+      // Update location AFTER profile loads
+      if (navigator.geolocation && data._id) {
         navigator.geolocation.getCurrentPosition(
-          (position) => {
-            customerService.updateLocation(
-              position.coords.latitude,
-              position.coords.longitude
-            );
+          async (position) => {
+            try {
+              await customerService.updateLocation(
+                position.coords.latitude,
+                position.coords.longitude
+              );
+              // Update local profile state with new location
+              setProfile(prev => ({
+                ...prev,
+                location: {
+                  type: "Point",
+                  coordinates: [position.coords.longitude, position.coords.latitude]
+                }
+              }));
+            } catch (err) {
+              console.warn("Location update failed:", err);
+            }
           },
-          (error) => {
-            console.warn("Geolocation error:", error);
-          }
+          (error) => console.warn("Geolocation error:", error),
+          { enableHighAccuracy: true, timeout: 10000 }
         );
       }
     } catch (err) {
-      console.error("Error fetching profile:", err);
+      console.error("Profile error:", err);
       if (err.response?.status === 401) {
+        localStorage.clear();
         navigate("/login");
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Fetch Requests
-  const fetchRequests = async () => {
-    try {
-      if (!profile._id) return;
-      const data = await customerService.getRequests(profile._id);
-      setRequests(data);
-      
-      // Filter completed services
-      const completed = data.filter(r => r.status === "completed");
-      setCompletedServices(completed);
-    } catch (err) {
-      console.error("Error fetching requests:", err);
-    }
-  };
-
-  // Fetch Providers for category
-  const fetchProviders = async (service) => {
-    try {
-      // Format service name for URL
-      const formattedService = service.toLowerCase().replace(/\s+/g, "-");
-      const data = await customerService.getProvidersByService(formattedService);
-      setProviders(data.providers || []);
-      setError("");
-    } catch (err) {
-      console.error("Error fetching providers:", err);
-      setProviders([]);
-      if (err.response?.status === 404) {
-        setError(`No providers found for ${service}`);
-      }
-    }
-  };
-
-  // Send service request
-  const handleSendRequest = async (providerId, providerName) => {
-    try {
-      if (!selectedCategory) return;
-      
-      const result = await customerService.sendRequest(providerId, selectedCategory);
-      alert(`Service request sent to ${providerName}. They will contact you shortly.`);
-      // Refresh requests
-      fetchRequests();
-    } catch (err) {
-      console.error("Error sending request:", err);
-      alert(err.response?.data?.msg || "Failed to send request");
     }
   };
 
@@ -287,10 +362,16 @@ export default function CustomerDashboard() {
     }
   }, [selectedCategory]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/home");
+  const handleLogout = async () => {
+    try {
+      await customerService.logout();
+    } catch (err) {
+      console.log("Logout cleanup:", err);
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      navigate("/home");
+    }
   };
 
   const handleCategoryClick = (service) => {
@@ -330,21 +411,28 @@ export default function CustomerDashboard() {
     return name.split(" ").map(n => n[0]).join("").toUpperCase();
   };
 
-  // Process provider data from API
+  // Process provider data from API - UPDATED for your schema
   const processProvider = (provider, index) => {
+    // Check your backend schema - looks like fields might have spaces
+    const fullName = provider["Full Name"] || provider.fullName || provider.FullName || provider.name || "Unknown Provider";
+    const profilePhoto = provider["Profile Photo"] || provider.profilePhoto || null;
+    const experience = provider["Year of Experience"] || provider.experience || "N/A";
+    const skills = provider["Skills / Expertise"] || provider.skills || [];
+    const bio = provider["Short Bio"] || provider.bio || "No bio available";
+    
     return {
       id: provider._id || provider.id,
-      name: provider.name || provider.FullName || "Unknown Provider",
-      profilePhoto: provider.profilePhoto || provider["Profile Photo"] || null,
+      name: fullName,
+      profilePhoto: profilePhoto,
       rating: provider.avgRating || 0,
       totalServices: provider.servicesDone || 0,
-      experience: provider.experience || provider["Year of Experience"] || "N/A",
-      distance: provider.distanceInKm ? `${provider.distanceInKm} km` : "N/A",
+      experience: experience,
+      distance: provider.distanceInKm ? `${provider.distanceInKm.toFixed(1)} km` : "N/A",
       address: provider.address || "",
-      bio: provider.bio || provider["Short Bio"] || "No bio available",
+      bio: bio,
       phone: provider.phone || "",
-      skills: provider.topSkills || provider["Skills / Expertise"] || [],
-      online: index < 2, // For demo - first 2 are online
+      skills: skills,
+      online: provider.isOnline || index < 2, // Use actual online status if available
       service: selectedCategory
     };
   };
@@ -599,7 +687,7 @@ export default function CustomerDashboard() {
                               <div className="flex items-start justify-between">
                                 <div className="flex items-start gap-4 flex-1">
                                   <div className="relative shrink-0">
-                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white text-lg font-bold">
+                                    <div className="w-16 h-16 rounded-full bg-linear-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white text-lg font-bold">
                                       {getInitials(provider.FullName || provider.name)}
                                     </div>
                                     <div className={`absolute bottom-1 right-1 w-3 h-3 rounded-full border-2 border-white ${provider.isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
@@ -658,7 +746,7 @@ export default function CustomerDashboard() {
                                   {provider.phone && (
                                     <a
                                       href={`tel:${provider.phone}`}
-                                      className="gap-1.5 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center text-white font-medium hover:from-green-600 hover:to-emerald-700 transition-colors"
+                                      className="gap-1.5 px-4 py-2 bg-linear-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center text-white font-medium hover:from-green-600 hover:to-emerald-700 transition-colors"
                                     >
                                       <FaPhone size={14} className="text-white text-base rotate-90" />
                                       <span>Call</span>
@@ -795,43 +883,48 @@ export default function CustomerDashboard() {
 
             {/* BROWSE SERVICES */}
             {activeTab === "services" && (
-              <>
-                {!selectedCategory ? (
-                  <div className="mb-8">
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                      Browse Services
-                    </h1>
-                    <p className="text-gray-600 mb-6">
-                      Choose a service to find professionals
-                    </p>
-                    
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 mt-4">
-                      {SERVICES.map(service => (
-                        <motion.div 
-                          key={service.id} 
-                          whileHover={{ scale: 1.03 }} 
-                          whileTap={{ scale: 0.98 }}
-                          className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl"
-                          onClick={() => handleCategoryClick(service)}
-                        >
-                          <div className="relative overflow-hidden h-36">
+                <>
+                  {!selectedCategory ? (
+                    <div className="mb-8">
+                      <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                        Browse Services
+                      </h1>
+                      <p className="text-gray-600 mb-6">
+                        Choose a service to find professionals
+                      </p>
+                      
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-px mt-4">
+                        {SERVICES.map(service => (
+                          <motion.div 
+                            key={service.id} 
+                            whileHover={{ scale: 1.02 }} 
+                            whileTap={{ scale: 0.98 }}
+                            className="relative aspect-4/3 overflow-hidden cursor-pointer group"
+                            onClick={() => handleCategoryClick(service)}
+                          >
+                            {/* Background Image - Clear by default, blur on hover */}
                             <img 
                               src={service.img} 
                               alt={service.title} 
-                              className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" 
+                              className="w-full h-full object-cover group-hover:blur transition-all duration-300" 
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                          </div>
-                          <div className="p-4 text-center bg-gradient-to-b from-white to-gray-50">
-                            <p className="font-bold text-gray-900 text-lg">{service.title}</p>
-                            <p className="text-sm text-gray-600 mt-1">Tap to view providers</p>
-                          </div>
-                        </motion.div>
-                      ))}
+                            
+                            {/* Dark Overlay - Appears on hover */}
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300"></div>
+                            
+                            {/* Service Name - Clear text on hover */}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <h3 className="text-lg font-bold text-white text-center px-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                {service.title}
+                              </h3>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+                  ) : (
+
+                  <div className="min-h-screen bg-linear-to-b from-gray-50 to-white">
                     {/* Header with Back Button */}
                     <div className="max-w-6xl mx-auto mb-6">
                       <div className="mb-6">
@@ -888,7 +981,7 @@ export default function CustomerDashboard() {
                                       <div className="flex items-start gap-6">
                                         {/* Avatar with Online Status */}
                                         <div className="relative">
-                                          <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center text-white text-2xl font-bold shadow-xl relative">
+                                          <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-linear-to-br from-gray-900 to-gray-700 flex items-center justify-center text-white text-2xl font-bold shadow-xl relative">
                                             {getInitials(processedProvider.name)}
                                           </div>
                                           {/* Online Status Badge */}
@@ -944,7 +1037,7 @@ export default function CustomerDashboard() {
                                             {processedProvider.skills.slice(0, 4).map((skill, index) => (
                                               <span
                                                 key={index}
-                                                className="px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-100"
+                                                className="px-4 py-2 rounded-lg font-semibold bg-linear-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-100"
                                               >
                                                 {typeof skill === 'string' ? skill : skill.name || skill}
                                               </span>
@@ -963,10 +1056,10 @@ export default function CustomerDashboard() {
                                     <div className="lg:w-80 flex flex-col gap-4">
                                       {/* Call Button Section */}
                                       {processedProvider.phone && (
-                                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-3 border border-green-100">
+                                        <div className="bg-linear-to-r from-green-50 to-emerald-50 rounded-2xl p-3 border border-green-100">
                                           <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                              <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
+                                              <div className="w-10 h-10 rounded-lg bg-linear-to-r from-green-500 to-emerald-600 flex items-center justify-center">
                                                 <FaPhone className="text-white text-base rotate-90" />
                                               </div>
                                               <div>
@@ -977,7 +1070,7 @@ export default function CustomerDashboard() {
                                             </div>
                                             <a
                                               href={`tel:${processedProvider.phone.replace(/\s+/g, '')}`}
-                                              className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow hover:shadow-md transform hover:-translate-y-0.5 text-sm"
+                                              className="flex items-center gap-1.5 px-4 py-2 bg-linear-to-r from-green-500 to-emerald-600 text-white font-bold rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow hover:shadow-md transform hover:-translate-y-0.5 text-sm"
                                             >
                                               <span>CALL NOW</span>
                                               <FaPhone className="text-sm rotate-90" />
@@ -1107,7 +1200,7 @@ function ServiceReviewCard({ service }) {
           <div className="flex flex-col sm:flex-row sm:items-start gap-4">
             {/* Provider Info with Profile Picture */}
             <div className="shrink-0">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white text-lg font-bold">
+              <div className="w-16 h-16 rounded-full bg-linear-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white text-lg font-bold">
                 {getInitials(provider.FullName || provider.name)}
               </div>
             </div>
